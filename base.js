@@ -7,7 +7,7 @@
 // @updateURL    https://raw.githubusercontent.com/kotomax24/CELCAT-to-.ics/main/base.js
 // @downloadURL  https://raw.githubusercontent.com/kotomax24/CELCAT-to-.ics/main/base.js
 // @author       Kotomax24
-// @match        https://edt.univ-tlse3.fr/calendar2/*
+// @match        https://edt.univ-tlse3.fr/calendar/*
 // @grant
 // ==/UserScript==
 
@@ -363,12 +363,12 @@ function isConnected() {
 }
 
 function getFederalId() {
-    const textContent = document.querySelector(".logInOrOut").innerText;
-    const match = textContent.match(/Déconnexion - ([0-9]+)|Log Out - ([0-9]+)/i);
-    if (match) {
-        return match[1] || match[2];
-    }
-    return null;
+    const federalIds = new Array()
+    const options = document.querySelectorAll('#resourceSelectList option');
+    options.forEach(option => {
+        federalIds.push(option.value)
+    });
+    return federalIds
 }
 
 /**
@@ -389,22 +389,28 @@ function resetMainDialogError() {
 async function getData(startDate, endDate) {
 	const headers = new Headers()
 	headers.append("Content-Type", "application/x-www-form-urlencoded")
+    const federalIds = getFederalId()
+
+    const body = new URLSearchParams({
+			start: startDate.toISOString().split("T")[0],
+			end: endDate.toISOString().split("T")[0],
+			resType: "103",
+			calView: "agendaWeek",
+			colourScheme: "1"
+	})
+
+    federalIds.forEach(id =>{
+        body.append("federationIds[]", id)
+    })
 
 	const params = {
 		method: "POST",
 		headers: headers,
 		mode: "cors",
-		body: new URLSearchParams({
-			start: startDate.toISOString().split("T")[0],
-			end: endDate.toISOString().split("T")[0],
-			resType: "104",
-			calView: "agendaWeek",
-			"federationIds[]": getFederalId(),
-			colourScheme: "3"
-		})
+		body: body
 	}
 
-	const result = await fetch("https://edt.univ-tlse3.fr/calendar2/Home/GetCalendarData", params)
+	const result = await fetch("https://edt.univ-tlse3.fr/calendar/Home/GetCalendarData", params)
 	return result.json()
 }
 
